@@ -1,0 +1,35 @@
+# Exact versions this submission was produced with, on macOS 15 / Apple
+# Silicon, Python 3.12.13. The pyproject declares looser floors for anyone
+# installing the package; this file reproduces the run.
+#
+#   python3.12 -m venv .venv
+#   .venv/bin/python -m pip install -r requirements.txt
+
+# The GAN itself. torch is used on the MPS or CPU device; no CUDA build is
+# required and none is pinned here.
+torch==2.14.0
+torchvision==0.29.0
+numpy==2.5.3
+pillow==12.3.0
+
+# Results tables and figures.
+pandas==3.0.6
+matplotlib==3.11.2
+
+# Machine-written run configuration.
+PyYAML==6.0.3
+
+# Test suite.
+pytest==9.1.1
+
+# Report generation (scripts/, not the installed package). beautifulsoup4
+# is used only to right-align numeric table columns in the PDF; without it
+# the tables render left-aligned and everything else is unchanged.
+Markdown==3.11
+beautifulsoup4==4.15.0
+
+# Executing the notebook in place so its committed outputs are the ones
+# this code produced.
+jupyter==1.1.1
+nbconvert==7.17.1
+nbformat==5.11.1

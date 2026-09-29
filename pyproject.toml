@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gan-mnist"
+version = "1.0.0"
+description = "A small unconditional GAN on MNIST, with a controlled discriminator learning-rate comparison"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Samuel Collins", email = "samuel.collins@students.cau.edu" }]
+
+dependencies = [
+    "torch>=2.5",
+    "torchvision>=0.20",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "matplotlib>=3.9",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3"]
+# Report generation lives in scripts/, not the installed package.
+# beautifulsoup4 is used only to right-align numeric table columns in the
+# PDF; without it the tables render left-aligned and nothing else changes.
+report = ["markdown>=3.7", "beautifulsoup4>=4.12"]
+# Executing the notebook in place, so its committed outputs are the ones
+# this code produced.
+notebook = ["jupyter>=1.1", "nbconvert>=7.16", "nbformat>=5.10"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

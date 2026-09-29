@@ -1,0 +1,46 @@
+# The brief forbids submitting dataset downloads or large checkpoints. What
+# the report is built from -- results, figures, the subset manifest and the
+# configuration -- is committed; the artifacts they were derived from are not.
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.DS_Store
+
+# The MNIST download. The 10,000-image subset is rebuilt by
+# scripts/build_mnist_subset.py from the committed manifest, at the same
+# seed, so the images themselves do not need to be in the repository.
+data/MNIST/
+data/*.gz
+!data/subset_manifest.json
+
+# Build intermediate for the PDF.
+report/*.html
+
+# Results, figures and the generated report are written by every run,
+# including the smoke and scouting runs used while developing. A report
+# built from a scouting run reads exactly like one built from the real
+# thing, so these are ignored by default and the genuine set is added
+# deliberately with `git add -f results/ plots/ report/` once both final
+# runs complete. A number enters the repository as a decision.
+results/*.json
+results/*.csv
+results/*.pt
+plots/*.png
+report/*.md
+report/*.pdf
+
+# Model weights. Small for this architecture, but the brief asks that
+# checkpoints not be submitted; the run is cheap enough to reproduce.
+checkpoints/
+*.pt
+!results/fixed_noise.pt
+
+# The executed notebook is committed deliberately once src/ is final,
+# for the same reason as the report: an executed notebook from a smoke
+# run is indistinguishable from the real one at a glance.
+GAN_MNIST.ipynb
