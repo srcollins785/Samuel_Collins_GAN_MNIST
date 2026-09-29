@@ -1,0 +1,174 @@
+{
+  "generator": {
+    "name": "Generator",
+    "input_shape": [
+      100
+    ],
+    "layers": [
+      {
+        "layer": "net.0",
+        "type": "Linear",
+        "output_shape": [
+          256
+        ],
+        "parameters": 25856
+      },
+      {
+        "layer": "net.1",
+        "type": "LeakyReLU",
+        "output_shape": [
+          256
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.2",
+        "type": "Linear",
+        "output_shape": [
+          512
+        ],
+        "parameters": 131584
+      },
+      {
+        "layer": "net.3",
+        "type": "BatchNorm1d",
+        "output_shape": [
+          512
+        ],
+        "parameters": 1024
+      },
+      {
+        "layer": "net.4",
+        "type": "LeakyReLU",
+        "output_shape": [
+          512
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.5",
+        "type": "Linear",
+        "output_shape": [
+          1024
+        ],
+        "parameters": 525312
+      },
+      {
+        "layer": "net.6",
+        "type": "BatchNorm1d",
+        "output_shape": [
+          1024
+        ],
+        "parameters": 2048
+      },
+      {
+        "layer": "net.7",
+        "type": "LeakyReLU",
+        "output_shape": [
+          1024
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.8",
+        "type": "Linear",
+        "output_shape": [
+          784
+        ],
+        "parameters": 803600
+      },
+      {
+        "layer": "net.9",
+        "type": "Tanh",
+        "output_shape": [
+          784
+        ],
+        "parameters": 0
+      }
+    ],
+    "parameters": {
+      "total": 1489424,
+      "trainable": 1489424,
+      "frozen": 0
+    }
+  },
+  "discriminator": {
+    "name": "Discriminator",
+    "input_shape": [
+      1,
+      28,
+      28
+    ],
+    "layers": [
+      {
+        "layer": "net.0",
+        "type": "Flatten",
+        "output_shape": [
+          784
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.1",
+        "type": "Linear",
+        "output_shape": [
+          512
+        ],
+        "parameters": 401920
+      },
+      {
+        "layer": "net.2",
+        "type": "LeakyReLU",
+        "output_shape": [
+          512
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.3",
+        "type": "Dropout",
+        "output_shape": [
+          512
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.4",
+        "type": "Linear",
+        "output_shape": [
+          256
+        ],
+        "parameters": 131328
+      },
+      {
+        "layer": "net.5",
+        "type": "LeakyReLU",
+        "output_shape": [
+          256
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.6",
+        "type": "Dropout",
+        "output_shape": [
+          256
+        ],
+        "parameters": 0
+      },
+      {
+        "layer": "net.7",
+        "type": "Linear",
+        "output_shape": [
+          1
+        ],
+        "parameters": 257
+      }
+    ],
+    "parameters": {
+      "total": 533505,
+      "trainable": 533505,
+      "frozen": 0
+    }
+  }
+}

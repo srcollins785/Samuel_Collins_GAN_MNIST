@@ -1,0 +1,104 @@
+{
+  "note": "Supplementary. Not the comparison the brief requires; see results/baseline.json and results/contrast.json for that.",
+  "subset_checksum": "0a1b4f46cd55d4f97f488f273becbef4d419caf1e58ca417b2bc2d24ac5a9cc7",
+  "device": "mps",
+  "sweep": [
+    {
+      "discriminator_lr": 2e-05,
+      "seconds": 7.485558333108202,
+      "generator_loss": 0.6365452009515885,
+      "discriminator_loss": 1.3995111748958244,
+      "discriminator_accuracy": 0.4829727564102564
+    },
+    {
+      "discriminator_lr": 0.0002,
+      "seconds": 6.751765207853168,
+      "generator_loss": 0.9103605380425086,
+      "discriminator_loss": 1.2707182314151373,
+      "discriminator_accuracy": 0.6360677083333334
+    },
+    {
+      "discriminator_lr": 0.001,
+      "seconds": 6.648000457789749,
+      "generator_loss": 0.9869200918727961,
+      "discriminator_loss": 1.2157214935391376,
+      "discriminator_accuracy": 0.6669170673076923
+    },
+    {
+      "discriminator_lr": 0.004,
+      "seconds": 7.151603541104123,
+      "generator_loss": 0.9324308352019542,
+      "discriminator_loss": 1.4591373273959527,
+      "discriminator_accuracy": 0.5728665865384616
+    }
+  ],
+  "replication": [
+    {
+      "arm": "baseline",
+      "discriminator_lr": 0.0002,
+      "seed": 42,
+      "generator_loss": 0.9103605380425086,
+      "discriminator_loss": 1.2707182314151373,
+      "discriminator_accuracy": 0.6360677083333334
+    },
+    {
+      "arm": "baseline",
+      "discriminator_lr": 0.0002,
+      "seed": 43,
+      "generator_loss": 0.9140755226596807,
+      "discriminator_loss": 1.2609813484625938,
+      "discriminator_accuracy": 0.6395232371794872
+    },
+    {
+      "arm": "baseline",
+      "discriminator_lr": 0.0002,
+      "seed": 44,
+      "generator_loss": 0.8973640860655369,
+      "discriminator_loss": 1.2793733313297615,
+      "discriminator_accuracy": 0.6290064102564102
+    },
+    {
+      "arm": "contrast",
+      "discriminator_lr": 2e-05,
+      "seed": 42,
+      "generator_loss": 0.6365452009515885,
+      "discriminator_loss": 1.3995111748958244,
+      "discriminator_accuracy": 0.4829727564102564
+    },
+    {
+      "arm": "contrast",
+      "discriminator_lr": 2e-05,
+      "seed": 43,
+      "generator_loss": 0.6710642511263872,
+      "discriminator_loss": 1.3929279492451594,
+      "discriminator_accuracy": 0.48162059294871795
+    },
+    {
+      "arm": "contrast",
+      "discriminator_lr": 2e-05,
+      "seed": 44,
+      "generator_loss": 0.6372328507594573,
+      "discriminator_loss": 1.3980326518798485,
+      "discriminator_accuracy": 0.48036858974358976
+    }
+  ],
+  "replication_summary": {
+    "baseline": {
+      "generator_loss_mean": 0.907266715589242,
+      "generator_loss_min": 0.8973640860655369,
+      "generator_loss_max": 0.9140755226596807,
+      "generator_loss_range": 0.01671143659414387,
+      "seeds": 3
+    },
+    "contrast": {
+      "generator_loss_mean": 0.6482807676124777,
+      "generator_loss_min": 0.6365452009515885,
+      "generator_loss_max": 0.6710642511263872,
+      "generator_loss_range": 0.03451905017479873,
+      "seeds": 3
+    },
+    "between_arm_difference": 0.25898594797676433,
+    "largest_within_arm_range": 0.03451905017479873,
+    "separated": true
+  }
+}
