@@ -1,0 +1,65 @@
+generated: '2026-09-29'
+generated_by: scripts/write_configuration.py, from results/*.json
+assignment: 'Lab Assignment 5: Generative Adversarial Networks'
+data:
+  dataset: MNIST train split
+  population: 60000
+  subset_size: 10000
+  selection: numpy.random.default_rng(seed).choice, without replacement, sorted
+  selection_seed: 42
+  subset_checksum: 0a1b4f46cd55d4f97f488f273becbef4d419caf1e58ca417b2bc2d24ac5a9cc7
+  image_shape:
+  - 1
+  - 28
+  - 28
+  normalization: ToTensor to [0, 1], then (x - 0.5) / 0.5 to [-1, 1]
+  labels_used: false
+model:
+  type: fully connected, unconditional
+  latent_dim: 100
+  generator_parameters: 1489424
+  discriminator_parameters: 533505
+  discriminator_output: logit (no sigmoid)
+  loss: BCEWithLogitsLoss
+training:
+  seed: 42
+  epochs: 5
+  batch_size: 32
+  batches_per_epoch: 312
+  generator_updates: 1560
+  optimizer: Adam
+  betas:
+  - 0.5
+  - 0.999
+  generator_lr: 0.0002
+  checkpoints:
+  - 0
+  - 1
+  - 3
+  - 5
+  evaluation_noise_vectors: 16
+  evaluation_noise_checksum: dcf03d6f6db5e7b2a7c921a52716c8af5fffc531aa7aeb3c08b7ad9182aa41a0
+experiments:
+  baseline:
+    discriminator_lr: 0.0002
+    runtime_seconds: 7.08
+    device: mps
+    final_generator_loss: 0.9104
+    final_discriminator_loss: 1.2707
+    final_discriminator_accuracy: 0.6361
+  contrast:
+    discriminator_lr: 2.0e-05
+    runtime_seconds: 7.73
+    device: mps
+    final_generator_loss: 0.6365
+    final_discriminator_loss: 1.3995
+    final_discriminator_accuracy: 0.483
+hardware:
+  chip: Apple M4 Max
+  platform: macOS-26.6.2-arm64-arm-64bit
+  device_used: mps
+  mps_available: true
+  cuda_available: false
+software:
+  python: 3.12.13
+  torch: 2.14.0
