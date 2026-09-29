@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'><title>GAN MNIST Report</title><style>
+@page { size: Letter; margin: 0.7in; }
+
+body {
+  font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: #0b0b0b;
+  max-width: 100%;
+}
+
+h1 { font-size: 20pt; margin: 0 0 6px; letter-spacing: -0.01em; }
+
+h2 {
+  font-size: 13.5pt;
+  margin: 26px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e1e0d9;
+  /* Keep a heading with the content it introduces. */
+  break-after: avoid;
+  break-inside: avoid;
+}
+
+h3 {
+  font-size: 11.5pt;
+  margin: 18px 0 6px;
+  break-after: avoid;
+  color: #52514e;
+}
+
+p { margin: 0 0 9px; orphans: 3; widows: 3; }
+
+strong { font-weight: 640; }
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 9pt;
+  background: #f4f3ee;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+pre {
+  background: #f4f3ee;
+  padding: 10px 12px;
+  border-radius: 5px;
+  font-size: 8.5pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  break-inside: avoid;
+}
+pre code { background: none; padding: 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0 14px;
+  font-size: 8.8pt;
+  break-inside: avoid;
+}
+th, td {
+  border: 1px solid #e1e0d9;
+  padding: 4px 7px;
+  text-align: left;
+}
+th { background: #f4f3ee; font-weight: 640; }
+/* Right-alignment is applied per column by align_numeric_columns(), which
+   decides from the cell contents. Blanket-aligning every column after the
+   first would right-align prose in the task-definition tables. */
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* A grid and the caption naming its epoch must not be split across a
+   page: the figures in this report are only interpretable next to the
+   line that says which checkpoint they are. */
+img + em, p > em { break-before: avoid; }
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 10px auto 4px;
+  break-inside: avoid;
+}
+
+em { color: #52514e; }
+
+ul, ol { margin: 0 0 10px; padding-left: 22px; }
+li { margin-bottom: 4px; }
+
+hr { border: none; border-top: 1px solid #e1e0d9; margin: 18px 0; }
+
+blockquote {
+  margin: 0 0 10px;
+  padding-left: 12px;
+  border-left: 3px solid #e1e0d9;
+  color: #52514e;
+}
+</style></head><body>
+<h1 id="generating-handwritten-digits-with-a-gan">Generating Handwritten Digits with a GAN</h1>
+<p><strong>Samuel Collins</strong> - Ph.D. Student, Department of Cyber-Physical Systems, Clark Atlanta University
+samuel.collins@students.cau.edu</p>
+<p>Computer Vision - Lab Assignment 5: Generative Adversarial Networks - Instructor: Dr. Kishor Datta Gupta - 2026-09-29</p>
+<p>Repository: https://github.com/srcollins785/Samuel_Collins_GAN_MNIST</p>
+<hr/>
+<h2 id="summary">Summary</h2>
+<p><strong>The run with the lower final generator loss produced the worse images.</strong> The contrast run ended at a generator loss of 0.6365 against 0.9104 for the baseline run, a gap of 0.2738, and its samples are visibly the poorer of the two: speckled clouds rather than the digit strokes the baseline run reached by the same epoch. The generator loss and the sample quality moved in opposite directions, which is the central observation this report is built around.</p>
+<p>An unconditional fully connected GAN was trained on a reproducible 10,000-image subset of the MNIST training split (checksum <code>0a1b4f46cd55</code>) for 5 epochs at batch size 32, which is 1,560 generator updates. The experiment was then repeated from scratch with the discriminator learning rate changed from 2e-4 to 2e-5 and nothing else altered. Both runs used the same sixteen evaluation noise vectors (checksum <code>dcf03d6f6db5</code>) at every checkpoint. Total training time 15.3 s on Apple M4 Max.</p>
+<p>Every table, figure and number in this report was generated from the saved run files by <code>scripts/generate_report.py</code>. No number here was typed by hand. <code>scripts/validate_results.py</code> audits those files for internal consistency, including that the two run configurations differ in the discriminator learning rate and in no other field.</p>
+<h2 id="1-data-and-configuration">1. Data and configuration</h2>
+<p>MNIST's 60,000-image training split was reduced to a 10,000-image subset by <code>numpy.random.default_rng(seed).choice, without replacement, sorted</code> at seed 42. The images themselves are not in the repository - the brief forbids submitting dataset downloads - so what is committed is <code>data/subset_manifest.json</code>: the indices, the seed and a checksum over them. <code>scripts/build_mnist_subset.py</code> rebuilds the subset from it, and both runs recorded the same checksum <code>0a1b4f46cd55</code>, which is checked rather than assumed.</p>
+<p>Images are kept at 28 x 28 and normalized ToTensor to [0, 1], then (x - 0.5) / 0.5 to [-1, 1]. The range matters: the generator ends in <code>tanh</code>, so it can only emit values in [-1, 1]. Real data in [0, 1] would leave half the generator's range unusable and let the discriminator separate real from generated on brightness alone.</p>
+<p>Digit labels are not an input anywhere. This is an unconditional GAN: the generator's only input is a 100-dimensional vector of independent standard normals.</p>
+<p><img alt="Figure 1. Sixteen real examples from the training subset." src="../plots/real_samples.png"/></p>
+<p><em>Figure 1. Sixteen real examples from the training subset.</em></p>
+<h3 id="recorded-configuration">Recorded configuration</h3>
+<p><code>configuration.yaml</code> is generated from the run files by <code>scripts/write_configuration.py</code>, so it records what ran rather than what was intended. The settings are tabulated in Section 4 alongside the comparison.</p>
+<h2 id="2-the-two-networks">2. The two networks</h2>
+<h3 id="generator">Generator</h3>
+<p><strong>Generator</strong> - input <code>(100,)</code>, 1,489,424 parameters, all trainable</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Type</th>
+<th>Output shape</th>
+<th class="num">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>net.0</code></td>
+<td>Linear</td>
+<td><code>(256,)</code></td>
+<td class="num">25,856</td>
+</tr>
+<tr>
+<td><code>net.1</code></td>
+<td>LeakyReLU</td>
+<td><code>(256,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.2</code></td>
+<td>Linear</td>
+<td><code>(512,)</code></td>
+<td class="num">131,584</td>
+</tr>
+<tr>
+<td><code>net.3</code></td>
+<td>BatchNorm1d</td>
+<td><code>(512,)</code></td>
+<td class="num">1,024</td>
+</tr>
+<tr>
+<td><code>net.4</code></td>
+<td>LeakyReLU</td>
+<td><code>(512,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.5</code></td>
+<td>Linear</td>
+<td><code>(1024,)</code></td>
+<td class="num">525,312</td>
+</tr>
+<tr>
+<td><code>net.6</code></td>
+<td>BatchNorm1d</td>
+<td><code>(1024,)</code></td>
+<td class="num">2,048</td>
+</tr>
+<tr>
+<td><code>net.7</code></td>
+<td>LeakyReLU</td>
+<td><code>(1024,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.8</code></td>
+<td>Linear</td>
+<td><code>(784,)</code></td>
+<td class="num">803,600</td>
+</tr>
+<tr>
+<td><code>net.9</code></td>
+<td>Tanh</td>
+<td><code>(784,)</code></td>
+<td class="num">0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="discriminator">Discriminator</h3>
+<p><strong>Discriminator</strong> - input <code>(1, 28, 28)</code>, 533,505 parameters, all trainable</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Type</th>
+<th>Output shape</th>
+<th class="num">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>net.0</code></td>
+<td>Flatten</td>
+<td><code>(784,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.1</code></td>
+<td>Linear</td>
+<td><code>(512,)</code></td>
+<td class="num">401,920</td>
+</tr>
+<tr>
+<td><code>net.2</code></td>
+<td>LeakyReLU</td>
+<td><code>(512,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.3</code></td>
+<td>Dropout</td>
+<td><code>(512,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.4</code></td>
+<td>Linear</td>
+<td><code>(256,)</code></td>
+<td class="num">131,328</td>
+</tr>
+<tr>
+<td><code>net.5</code></td>
+<td>LeakyReLU</td>
+<td><code>(256,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.6</code></td>
+<td>Dropout</td>
+<td><code>(256,)</code></td>
+<td class="num">0</td>
+</tr>
+<tr>
+<td><code>net.7</code></td>
+<td>Linear</td>
+<td><code>(1,)</code></td>
+<td class="num">257</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-each-one-is-for">What each one is for</h3>
+<p>The <strong>generator's input</strong> is noise and nothing else: a 100-dimensional latent vector drawn from a standard normal. It carries no information about digits. Everything the samples eventually show - stroke thickness, closed loops, the fact that ink sits in the middle of the frame - is stored in the generator's weights and is reached by gradient descent, not supplied at inference. The output is a 1 x 28 x 28 image bounded to [-1, 1] by <code>tanh</code>.</p>
+<p>The <strong>discriminator's target</strong> is a single real-or-generated decision, not a digit class. It receives an image and returns one unbounded score. It is trained on labels that describe the image's provenance, which the data supplies for free: anything from the MNIST subset is real, anything the generator just produced is not.</p>
+<p><strong>The objectives differ because the two networks want opposite things from the same number.</strong> The discriminator wants its score to be high on real images and low on generated ones. The generator wants that same score to be high on its own output. They share one scalar and pull it in opposite directions, so neither has a loss it can minimize alone: the discriminator's task gets harder exactly as the generator improves. This is why neither loss curve can be read the way a classifier's training loss is read - a falling generator loss may mean the generator improved, or that the discriminator got worse, and the number alone does not say which. Section 5 shows a case where it was the second.</p>
+<h3 id="loss-formulation">Loss formulation</h3>
+<p>The discriminator's final layer is <code>Linear(256, 1)</code> with no sigmoid, so it returns a <strong>logit</strong>. The loss is <code>BCEWithLogitsLoss</code>, which applies the sigmoid inside the loss and evaluates it in log space. The brief asks that the binary cross-entropy formulation be consistent with whether the discriminator returns logits or probabilities, and this is that consistency. Pairing a raw logit with plain <code>BCELoss</code> would be wrong; pairing an explicit sigmoid with <code>BCEWithLogitsLoss</code> would apply the sigmoid twice. <code>tests/test_models.py</code> asserts the output escapes [0, 1] on extreme inputs, which a probability could not.</p>
+<p>The generator's target is 1, not 0. It maximizes the probability that its own output is called real rather than minimizing the discriminator's success. This non-saturating form gives the generator a strong gradient exactly when it is losing badly, which is when it most needs one.</p>
+<h2 id="3-the-training-updates">3. The training updates</h2>
+<p>Each batch runs one discriminator step and then one generator step. Which parameters move in each is the part of the assignment with the most weight on it, so it is stated here and asserted in the tests.</p>
+<p><strong>Discriminator step</strong> - updates the discriminator only. The real batch is scored against a target of 1 and the generated batch against 0. The generated batch is passed as <code>fake.detach()</code>, which severs the graph so no gradient reaches the generator at all. The optimizer holds discriminator parameters only, so even a gradient that did arrive could not be applied.</p>
+<p><strong>Generator step</strong> - updates the generator only. The <em>non-detached</em> <code>fake</code> is scored by the discriminator against a target of 1, so backward runs through the discriminator and into the generator: the path is preserved, which is what lets the generator learn from how it was scored. The discriminator accumulates gradients during that traversal and they are never applied, because this optimizer holds generator parameters only and the next discriminator step zeroes them before it starts.</p>
+<p>These are two independent guarantees - the detach and the optimizer partition - and <code>tests/test_train.py</code> checks both by snapshotting every parameter of the network that should hold still, running the other network's step, and comparing. Removing the <code>.detach()</code> fails five of those tests rather than passing quietly, which was verified deliberately: a test that cannot fail establishes nothing.</p>
+<h2 id="4-baseline-run">4. Baseline run</h2>
+<p>Discriminator learning rate 2e-4, equal to the generator's, which is the pairing the TensorFlow DCGAN tutorial uses. 5 epochs, 312 batches each, 7.9 s on mps.</p>
+<h3 id="per-epoch-losses">Per-epoch losses</h3>
+<table>
+<thead>
+<tr>
+<th class="num">Epoch</th>
+<th class="num">Generator loss</th>
+<th class="num">Discriminator loss</th>
+<th class="num">D accuracy (real)</th>
+<th class="num">D accuracy (fake)</th>
+<th class="num">D accuracy</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="num">1</td>
+<td class="num">0.8617</td>
+<td class="num">1.2925</td>
+<td class="num">0.805</td>
+<td class="num">0.382</td>
+<td class="num">0.594</td>
+<td>1.6 s</td>
+</tr>
+<tr>
+<td class="num">2</td>
+<td class="num">0.8835</td>
+<td class="num">1.2566</td>
+<td class="num">0.740</td>
+<td class="num">0.549</td>
+<td class="num">0.644</td>
+<td>1.5 s</td>
+</tr>
+<tr>
+<td class="num">3</td>
+<td class="num">0.8858</td>
+<td class="num">1.2666</td>
+<td class="num">0.683</td>
+<td class="num">0.595</td>
+<td class="num">0.639</td>
+<td>1.5 s</td>
+</tr>
+<tr>
+<td class="num">4</td>
+<td class="num">0.8890</td>
+<td class="num">1.2738</td>
+<td class="num">0.658</td>
+<td class="num">0.612</td>
+<td class="num">0.635</td>
+<td>1.5 s</td>
+</tr>
+<tr>
+<td class="num">5</td>
+<td class="num">0.9104</td>
+<td class="num">1.2707</td>
+<td class="num">0.645</td>
+<td class="num">0.627</td>
+<td class="num">0.636</td>
+<td>1.6 s</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Figure 2. Average generator and discriminator loss per epoch, baseline run." src="../plots/baseline_losses.png"/></p>
+<p><em>Figure 2. Average generator and discriminator loss per epoch, baseline run.</em></p>
+<h3 id="fixed-noise-checkpoints-before-training-epoch-1-epoch-3-epoch-5">Fixed-noise checkpoints (before training, epoch 1, epoch 3, epoch 5)</h3>
+<p>The same sixteen noise vectors are used at every checkpoint, so what changes between these grids is the generator and nothing else.</p>
+<p><img alt="Figure 3.0. Baseline generator output, before training." src="../plots/baseline_grid_epoch0.png"/></p>
+<p><em>Figure 3.0. Baseline generator output, before training.</em></p>
+<p><img alt="Figure 3.1. Baseline generator output, after epoch 1." src="../plots/baseline_grid_epoch1.png"/></p>
+<p><em>Figure 3.1. Baseline generator output, after epoch 1.</em></p>
+<p><img alt="Figure 3.3. Baseline generator output, after epoch 3." src="../plots/baseline_grid_epoch3.png"/></p>
+<p><em>Figure 3.3. Baseline generator output, after epoch 3.</em></p>
+<p><img alt="Figure 3.5. Baseline generator output, after epoch 5." src="../plots/baseline_grid_epoch5.png"/></p>
+<p><em>Figure 3.5. Baseline generator output, after epoch 5.</em></p>
+<h2 id="5-the-controlled-comparison">5. The controlled comparison</h2>
+<p>The experiment was repeated from scratch with the discriminator learning rate changed from <strong>2e-4</strong> to <strong>2e-5</strong> - a factor of ten lower. The generator learning rate, architecture, data subset, batch size, epoch budget, initial random seed and fixed evaluation noise are unchanged.</p>
+<p>That claim is checked, not asserted. <code>scripts/validate_results.py</code> diffs the two saved configurations against a list of fields the comparison holds fixed and fails unless the discriminator learning rate is the only one that moved, and unless the evaluation-noise checksum is identical across every checkpoint of both runs.</p>
+<h3 id="settings-and-runtime">Settings and runtime</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Baseline</th>
+<th>Contrast</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Discriminator learning rate</td>
+<td><strong>2e-4</strong></td>
+<td><strong>2e-5</strong></td>
+</tr>
+<tr>
+<td>Generator learning rate</td>
+<td>2e-4</td>
+<td>2e-4</td>
+</tr>
+<tr>
+<td>Optimizer</td>
+<td>Adam (0.5, 0.999)</td>
+<td>Adam (0.5, 0.999)</td>
+</tr>
+<tr>
+<td>Random seed</td>
+<td>42</td>
+<td>42</td>
+</tr>
+<tr>
+<td>Training images</td>
+<td>10,000</td>
+<td>10,000</td>
+</tr>
+<tr>
+<td>Subset checksum</td>
+<td><code>0a1b4f46cd55</code></td>
+<td><code>0a1b4f46cd55</code></td>
+</tr>
+<tr>
+<td>Batch size</td>
+<td>32</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Batches per epoch</td>
+<td>312</td>
+<td>312</td>
+</tr>
+<tr>
+<td>Epochs</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Generator updates</td>
+<td>1,560</td>
+<td>1,560</td>
+</tr>
+<tr>
+<td>Latent dimension</td>
+<td>100</td>
+<td>100</td>
+</tr>
+<tr>
+<td>Evaluation noise checksum</td>
+<td><code>dcf03d6f6db5</code></td>
+<td><code>dcf03d6f6db5</code></td>
+</tr>
+<tr>
+<td>Device</td>
+<td>mps</td>
+<td>mps</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>7.9 s</td>
+<td>7.4 s</td>
+</tr>
+<tr>
+<td>Final generator loss</td>
+<td>0.9104</td>
+<td>0.6365</td>
+</tr>
+<tr>
+<td>Final discriminator loss</td>
+<td>1.2707</td>
+<td>1.3995</td>
+</tr>
+<tr>
+<td>Final discriminator accuracy</td>
+<td>0.636</td>
+<td>0.483</td>
+</tr>
+</tbody>
+</table>
+<h3 id="per-epoch-losses-contrast-run">Per-epoch losses, contrast run</h3>
+<table>
+<thead>
+<tr>
+<th class="num">Epoch</th>
+<th class="num">Generator loss</th>
+<th class="num">Discriminator loss</th>
+<th class="num">D accuracy (real)</th>
+<th class="num">D accuracy (fake)</th>
+<th class="num">D accuracy</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="num">1</td>
+<td class="num">0.5375</td>
+<td class="num">1.4307</td>
+<td class="num">0.978</td>
+<td class="num">0.009</td>
+<td class="num">0.493</td>
+<td>1.6 s</td>
+</tr>
+<tr>
+<td class="num">2</td>
+<td class="num">0.6233</td>
+<td class="num">1.4061</td>
+<td class="num">0.883</td>
+<td class="num">0.060</td>
+<td class="num">0.472</td>
+<td>1.4 s</td>
+</tr>
+<tr>
+<td class="num">3</td>
+<td class="num">0.6407</td>
+<td class="num">1.4054</td>
+<td class="num">0.789</td>
+<td class="num">0.137</td>
+<td class="num">0.463</td>
+<td>1.4 s</td>
+</tr>
+<tr>
+<td class="num">4</td>
+<td class="num">0.6573</td>
+<td class="num">1.3998</td>
+<td class="num">0.698</td>
+<td class="num">0.230</td>
+<td class="num">0.464</td>
+<td>1.3 s</td>
+</tr>
+<tr>
+<td class="num">5</td>
+<td class="num">0.6365</td>
+<td class="num">1.3995</td>
+<td class="num">0.803</td>
+<td class="num">0.163</td>
+<td class="num">0.483</td>
+<td>1.6 s</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Figure 4. Generator and discriminator loss for both runs." src="../plots/comparison_losses.png"/></p>
+<p><em>Figure 4. Generator and discriminator loss for both runs.</em></p>
+<p><img alt="Figure 5. Discriminator accuracy per epoch, both runs. The dotted line is chance." src="../plots/comparison_accuracy.png"/></p>
+<p><em>Figure 5. Discriminator accuracy per epoch, both runs. The dotted line is chance.</em></p>
+<h3 id="final-grids">Final grids</h3>
+<p><img alt="Figure 6. Baseline run after epoch 5, discriminator learning rate 2e-4." src="../plots/baseline_grid_epoch5.png"/></p>
+<p><em>Figure 6. Baseline run after epoch 5, discriminator learning rate 2e-4.</em></p>
+<p><img alt="Figure 6. Contrast run after epoch 5, discriminator learning rate 2e-5." src="../plots/contrast_grid_epoch5.png"/></p>
+<p><em>Figure 6. Contrast run after epoch 5, discriminator learning rate 2e-5.</em></p>
+<h3 id="what-changed">What changed</h3>
+<p>The slower discriminator never became a useful critic. Its accuracy ended at 0.483, against 0.636 in the baseline, and its loss stayed near 1.400 - close to the 1.386 that two chance-level cross-entropy terms produce. A discriminator at chance cannot tell the generator which direction improves an image, so the generator optimized against an uninformative signal and produced texture rather than strokes.</p>
+<p>The generator's loss fell anyway, to 0.6365 from the baseline's 0.9104. Fooling a weak discriminator is easy, and the loss measures exactly that.</p>
+<h3 id="what-this-comparison-can-and-cannot-establish">What this comparison can and cannot establish</h3>
+<p><strong>It can establish</strong> that within this setup, at this seed and this budget, lowering the discriminator learning rate by a factor of ten degraded sample quality while lowering the generator's loss. The audit rules out a second uncontrolled difference as the cause, and the identical evaluation noise rules out the grids differing because different vectors were drawn.</p>
+<p><strong>It cannot establish</strong> a general relationship. It is two points on one axis, at one seed, at one architecture, after 1,560 generator updates. It says nothing about whether the trend continues, reverses, or is an artifact of such a short budget, and nothing about any rate between or beyond the two tested. It also measures quality by eye: there is no quantitative sample-quality score here, so "worse" is a visual reading of sixteen images, not a metric.</p>
+<p>The next section addresses the first two of those gaps directly, because both were cheap enough to test that leaving them untested would have been a choice.</p>
+<h2 id="6-supplementary-evidence">6. Supplementary evidence</h2>
+<p>Neither of these is the comparison the brief requires. Both are reported because the required comparison has limits that were cheap to probe, and because two of the four rates below moved the opposite way from the chosen contrast - leaving them out would make the comparison look more conclusive than it is.</p>
+<h3 id="a-four-rate-sweep-at-one-seed">A four-rate sweep at one seed</h3>
+<table>
+<thead>
+<tr>
+<th>Discriminator lr</th>
+<th class="num">Generator loss</th>
+<th class="num">Discriminator loss</th>
+<th class="num">D accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2e-5 (contrast)</td>
+<td class="num">0.6365</td>
+<td class="num">1.3995</td>
+<td class="num">0.483</td>
+</tr>
+<tr>
+<td>2e-4 (baseline)</td>
+<td class="num">0.9104</td>
+<td class="num">1.2707</td>
+<td class="num">0.636</td>
+</tr>
+<tr>
+<td>1e-3</td>
+<td class="num">0.9869</td>
+<td class="num">1.2157</td>
+<td class="num">0.667</td>
+</tr>
+<tr>
+<td>4e-3</td>
+<td class="num">0.9324</td>
+<td class="num">1.4591</td>
+<td class="num">0.573</td>
+</tr>
+</tbody>
+</table>
+<p>Generator loss is lowest at 2e-5 (0.6365) and highest at 1e-3 (0.9869). Judged visually, the sample quality runs the other way across that range: the 2e-5 grid is the speckled one and the faster discriminators produced the cleaner strokes. The pattern is not open-ended - at 4e-3 the discriminator loss oscillates between epochs rather than settling, which is the instability a discriminator that is too fast is expected to produce, even though its samples at five epochs were still sharp. The sweep grids are in <code>plots/supplementary/</code>.</p>
+<h3 id="each-arm-repeated-at-three-seeds">Each arm repeated at three seeds</h3>
+<table>
+<thead>
+<tr>
+<th>Arm</th>
+<th>Discriminator lr</th>
+<th class="num">Seed</th>
+<th class="num">Generator loss</th>
+<th class="num">D accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>baseline</td>
+<td>2e-4</td>
+<td class="num">42</td>
+<td class="num">0.9104</td>
+<td class="num">0.636</td>
+</tr>
+<tr>
+<td>baseline</td>
+<td>2e-4</td>
+<td class="num">43</td>
+<td class="num">0.9141</td>
+<td class="num">0.640</td>
+</tr>
+<tr>
+<td>baseline</td>
+<td>2e-4</td>
+<td class="num">44</td>
+<td class="num">0.8974</td>
+<td class="num">0.629</td>
+</tr>
+<tr>
+<td>contrast</td>
+<td>2e-5</td>
+<td class="num">42</td>
+<td class="num">0.6365</td>
+<td class="num">0.483</td>
+</tr>
+<tr>
+<td>contrast</td>
+<td>2e-5</td>
+<td class="num">43</td>
+<td class="num">0.6711</td>
+<td class="num">0.482</td>
+</tr>
+<tr>
+<td>contrast</td>
+<td>2e-5</td>
+<td class="num">44</td>
+<td class="num">0.6372</td>
+<td class="num">0.480</td>
+</tr>
+</tbody>
+</table>
+<p>The gap between the two arms in final generator loss is 0.2590. The largest spread within a single arm across its three seeds is 0.0345. The arms are therefore separated by roughly 8 times the seed-to-seed variation, so the difference is not an artifact of one initialization. This addresses the seed objection to the required comparison; it does not address the two-point objection, which would need rates between the ones tested.</p>
+<h2 id="7-analysis">7. Analysis</h2>
+<!-- analysis:start -->
+<p><strong>Quality and variety across checkpoints.</strong> Before training the grid is structureless noise. After epoch 1 the sixteen samples are diffuse grey clouds centered in the frame: the generator has learned where ink belongs before it has learned what ink looks like. Epoch 3 is where strokes appear - several closed loops in the middle rows - against backgrounds that are still visibly speckled. By epoch 5 the strokes are continuous and the backgrounds are largely black: the third-row ring and fourth-row oval read as zeros, two right-column samples as nines. Several remain ambiguous blobs, and none would pass as clean handwriting. That is the expected outcome of 1,560 generator updates, not a failure.</p>
+<p><strong>Do repeated outputs suggest mode collapse?</strong> The baseline grid leans heavily toward round, closed forms - zeros, sixes and nines - and thin digits like 1 and 7 are underrepresented. That is consistent with partial mode collapse. The evidence does not support the diagnosis, though. The sixteen samples are not duplicates of each other: stroke thickness, loop size and slant all vary between them, which outright collapse would not permit. More importantly, sixteen vectors are far too small a sample to characterize the output distribution, and round digits may simply be what a five-epoch generator learns first. Distinguishing the two needs a classifier over a few thousand samples to measure the class histogram, which was outside this lab's scope.</p>
+<p><strong>Why a low generator loss is not enough.</strong> This run answers the question with its own evidence. The contrast generator ended at 0.6365, well below the baseline's 0.9104, and produced visibly worse images. The reason is that the generator's loss is measured against the current discriminator, and the contrast discriminator was barely better than chance: accuracy 0.483 and a loss of 1.400, near the 1.386 that two chance-level terms give. A low generator loss against a weak critic says the critic is weak. The same argument inverts for discriminator accuracy: the baseline's 0.636 does not make its generator poor, and a discriminator that had memorized the subset could score near 1.0 while teaching the generator nothing. Both numbers describe the contest, not the images.</p>
+<p><strong>The learning-rate change, and what to test next.</strong> Lowering the discriminator rate tenfold removed the training signal the generator depends on and degraded the samples while improving its loss. A three-seed replication puts the gap between the arms at 0.2590 against a within-arm spread of 0.0345, so this is not one unlucky initialization. Next I would run intermediate rates to find where quality stops improving, extend the budget well past five epochs to see whether the fast-discriminator advantage survives, and replace the visual judgment with a quantitative score - Frechet Inception Distance, or a classifier-based class histogram - so that "better" stops depending on my reading of sixteen pictures.</p>
+<p><strong>An application, and a limitation to check.</strong> Synthetic images are useful for augmenting rare classes in a detection or classification training set - defect types that appear a few times a year on a production line, for instance, where real examples are too scarce to train on. The limitation I would check first is whether the generator covers the real variation or only its dense center. A generator with the mode bias suggested above would manufacture many typical examples and none of the unusual ones, and a model trained on that augmented set would look better in validation while getting worse at exactly the rare cases the augmentation was meant to fix.</p>
+<!-- analysis:end -->
+<h2 id="8-source-and-changes">8. Source and changes</h2>
+<p>The starting point was the official TensorFlow DCGAN tutorial (<a href="https://www.tensorflow.org/tutorials/generative/dcgan">https://www.tensorflow.org/tutorials/generative/dcgan</a>), which the brief cites as a worked MNIST example. What was taken from it: the overall alternating-update structure, the separate real and fake discriminator loss terms summed into one discriminator loss, the non-saturating generator objective with a target of 1, Adam at beta-1 0.5, a learning rate of 2e-4 for both networks, tanh output with data scaled to [-1, 1], and the practice of rendering a fixed noise vector at intervals to watch progress.</p>
+<p>What was changed, and why:</p>
+<ul>
+<li><strong>PyTorch rather than TensorFlow.</strong> The brief permits either. The   requirement to show that the discriminator step does not update   the generator is more directly expressible - and more directly   testable - with explicit optimizers and <code>.detach()</code> than with a   gradient tape.</li>
+<li><strong>Fully connected rather than convolutional.</strong> The brief states a   small fully connected GAN is sufficient. It also trains in seconds   at this budget, which made the four-rate sweep and the three-seed   replication in Section 6 affordable.</li>
+<li><strong><code>BCEWithLogitsLoss</code> on a logit output</strong> rather than the   tutorial's <code>from_logits=True</code> cross-entropy, which is the same   formulation in PyTorch's vocabulary.</li>
+<li><strong>Batch size 32 rather than 256.</strong> See Section 9.</li>
+<li><strong>A 10,000-image subset, 5 epochs</strong>, as the brief specifies, rather   than the tutorial's full 60,000 for 50 epochs.</li>
+</ul>
+<h2 id="9-documented-choices-and-deviations">9. Documented choices and deviations</h2>
+<p><strong>Batch size 32.</strong> The brief fixes the subset at 10,000 images and the budget at 5 epochs but does not fix the batch size, and that choice determines how many times the generator is actually updated: 390 at batch 128 against 1,560 at batch 32. A scouting run at batch 128 produced centered blobs at five epochs where batch 32 produced recognizable strokes; batch 16 was no better and twice as slow. The choice is recorded here rather than presented as a default.</p>
+<p><strong>The standard compute path was used.</strong> The brief offers a reduced option of 5,000 images and 3 epochs for limited hardware. It was not needed: the full 10,000-image, 5-epoch run takes 7.9 s.</p>
+<p><strong>Scouting runs preceded the final ones.</strong> Four discriminator rates were tried before choosing the contrast value, and all four are reported in Section 6 rather than only the one chosen. The contrast rate was selected because it produced the clearest result, not because it was the only one tried, and two of the four moved the opposite way.</p>
+<p><strong>Sample quality is judged visually.</strong> No FID or classifier-based score was computed. Every claim about images being better or worse in this report is a reading of a sixteen-image grid and should be treated as such.</p>
+<p><strong>Device.</strong> MPS was used after measuring it at 2.1 s against 2.8 s for CPU over five epochs. The subset selection uses NumPy and the noise is drawn on the CPU before being moved to the device, so neither the data nor the evaluation grid depends on which device ran.</p>
+<h2 id="10-reproducing-this-report">10. Reproducing this report</h2>
+<pre><code>python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python scripts/run_all.py
+</code></pre>
+<p><code>run_all.py</code> runs the test suite, builds the subset, runs both experiments and the supplementary runs, audits the results, regenerates this report and its PDF, and executes the notebook. Each step is a separate script and can be run alone; the experiments take 15.3 s and the report takes about a second, and it is usually the report that changed.</p>
+<p>Executed notebook: <code>GAN_MNIST.ipynb</code>. Repository: https://github.com/srcollins785/Samuel_Collins_GAN_MNIST.</p>
+</body></html>

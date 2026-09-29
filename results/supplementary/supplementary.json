@@ -5,28 +5,28 @@
   "sweep": [
     {
       "discriminator_lr": 2e-05,
-      "seconds": 7.485558333108202,
+      "seconds": 7.910250290995464,
       "generator_loss": 0.6365452009515885,
       "discriminator_loss": 1.3995111748958244,
       "discriminator_accuracy": 0.4829727564102564
     },
     {
       "discriminator_lr": 0.0002,
-      "seconds": 6.751765207853168,
+      "seconds": 6.5605827500112355,
       "generator_loss": 0.9103605380425086,
       "discriminator_loss": 1.2707182314151373,
       "discriminator_accuracy": 0.6360677083333334
     },
     {
       "discriminator_lr": 0.001,
-      "seconds": 6.648000457789749,
+      "seconds": 5.451536749955267,
       "generator_loss": 0.9869200918727961,
       "discriminator_loss": 1.2157214935391376,
       "discriminator_accuracy": 0.6669170673076923
     },
     {
       "discriminator_lr": 0.004,
-      "seconds": 7.151603541104123,
+      "seconds": 5.472749624866992,
       "generator_loss": 0.9324308352019542,
       "discriminator_loss": 1.4591373273959527,
       "discriminator_accuracy": 0.5728665865384616

@@ -13,7 +13,7 @@ Repository: https://github.com/srcollins785/Samuel_Collins_GAN_MNIST
 
 **The run with the lower final generator loss produced the worse images.** The contrast run ended at a generator loss of 0.6365 against 0.9104 for the baseline run, a gap of 0.2738, and its samples are visibly the poorer of the two: speckled clouds rather than the digit strokes the baseline run reached by the same epoch. The generator loss and the sample quality moved in opposite directions, which is the central observation this report is built around.
 
-An unconditional fully connected GAN was trained on a reproducible 10,000-image subset of the MNIST training split (checksum `0a1b4f46cd55`) for 5 epochs at batch size 32, which is 1,560 generator updates. The experiment was then repeated from scratch with the discriminator learning rate changed from 2e-4 to 2e-5 and nothing else altered. Both runs used the same sixteen evaluation noise vectors (checksum `dcf03d6f6db5`) at every checkpoint. Total training time 14.8 s on Apple M4 Max.
+An unconditional fully connected GAN was trained on a reproducible 10,000-image subset of the MNIST training split (checksum `0a1b4f46cd55`) for 5 epochs at batch size 32, which is 1,560 generator updates. The experiment was then repeated from scratch with the discriminator learning rate changed from 2e-4 to 2e-5 and nothing else altered. Both runs used the same sixteen evaluation noise vectors (checksum `dcf03d6f6db5`) at every checkpoint. Total training time 15.3 s on Apple M4 Max.
 
 Every table, figure and number in this report was generated from the saved run files by `scripts/generate_report.py`. No number here was typed by hand. `scripts/validate_results.py` audits those files for internal consistency, including that the two run configurations differ in the discriminator learning rate and in no other field.
 
@@ -94,17 +94,17 @@ These are two independent guarantees - the detach and the optimizer partition - 
 
 ## 4. Baseline run
 
-Discriminator learning rate 2e-4, equal to the generator's, which is the pairing the TensorFlow DCGAN tutorial uses. 5 epochs, 312 batches each, 7.1 s on mps.
+Discriminator learning rate 2e-4, equal to the generator's, which is the pairing the TensorFlow DCGAN tutorial uses. 5 epochs, 312 batches each, 7.9 s on mps.
 
 ### Per-epoch losses
 
 | Epoch | Generator loss | Discriminator loss | D accuracy (real) | D accuracy (fake) | D accuracy | Time |
 |---|---|---|---|---|---|---|
-| 1 | 0.8617 | 1.2925 | 0.805 | 0.382 | 0.594 | 1.4 s |
-| 2 | 0.8835 | 1.2566 | 0.740 | 0.549 | 0.644 | 1.2 s |
-| 3 | 0.8858 | 1.2666 | 0.683 | 0.595 | 0.639 | 1.2 s |
+| 1 | 0.8617 | 1.2925 | 0.805 | 0.382 | 0.594 | 1.6 s |
+| 2 | 0.8835 | 1.2566 | 0.740 | 0.549 | 0.644 | 1.5 s |
+| 3 | 0.8858 | 1.2666 | 0.683 | 0.595 | 0.639 | 1.5 s |
 | 4 | 0.8890 | 1.2738 | 0.658 | 0.612 | 0.635 | 1.5 s |
-| 5 | 0.9104 | 1.2707 | 0.645 | 0.627 | 0.636 | 1.4 s |
+| 5 | 0.9104 | 1.2707 | 0.645 | 0.627 | 0.636 | 1.6 s |
 
 ![Figure 2. Average generator and discriminator loss per epoch, baseline run.](../plots/baseline_losses.png)
 
@@ -158,7 +158,7 @@ That claim is checked, not asserted. `scripts/validate_results.py` diffs the two
 | Latent dimension | 100 | 100 |
 | Evaluation noise checksum | `dcf03d6f6db5` | `dcf03d6f6db5` |
 | Device | mps | mps |
-| Runtime | 7.1 s | 7.7 s |
+| Runtime | 7.9 s | 7.4 s |
 | Final generator loss | 0.9104 | 0.6365 |
 | Final discriminator loss | 1.2707 | 1.3995 |
 | Final discriminator accuracy | 0.636 | 0.483 |
@@ -167,10 +167,10 @@ That claim is checked, not asserted. `scripts/validate_results.py` diffs the two
 
 | Epoch | Generator loss | Discriminator loss | D accuracy (real) | D accuracy (fake) | D accuracy | Time |
 |---|---|---|---|---|---|---|
-| 1 | 0.5375 | 1.4307 | 0.978 | 0.009 | 0.493 | 1.5 s |
+| 1 | 0.5375 | 1.4307 | 0.978 | 0.009 | 0.493 | 1.6 s |
 | 2 | 0.6233 | 1.4061 | 0.883 | 0.060 | 0.472 | 1.4 s |
-| 3 | 0.6407 | 1.4054 | 0.789 | 0.137 | 0.463 | 1.5 s |
-| 4 | 0.6573 | 1.3998 | 0.698 | 0.230 | 0.464 | 1.5 s |
+| 3 | 0.6407 | 1.4054 | 0.789 | 0.137 | 0.463 | 1.4 s |
+| 4 | 0.6573 | 1.3998 | 0.698 | 0.230 | 0.464 | 1.3 s |
 | 5 | 0.6365 | 1.3995 | 0.803 | 0.163 | 0.483 | 1.6 s |
 
 ![Figure 4. Generator and discriminator loss for both runs.](../plots/comparison_losses.png)
@@ -269,7 +269,7 @@ What was changed, and why:
 
 **Batch size 32.** The brief fixes the subset at 10,000 images and the budget at 5 epochs but does not fix the batch size, and that choice determines how many times the generator is actually updated: 390 at batch 128 against 1,560 at batch 32. A scouting run at batch 128 produced centered blobs at five epochs where batch 32 produced recognizable strokes; batch 16 was no better and twice as slow. The choice is recorded here rather than presented as a default.
 
-**The standard compute path was used.** The brief offers a reduced option of 5,000 images and 3 epochs for limited hardware. It was not needed: the full 10,000-image, 5-epoch run takes 7.1 s.
+**The standard compute path was used.** The brief offers a reduced option of 5,000 images and 3 epochs for limited hardware. It was not needed: the full 10,000-image, 5-epoch run takes 7.9 s.
 
 **Scouting runs preceded the final ones.** Four discriminator rates were tried before choosing the contrast value, and all four are reported in Section 6 rather than only the one chosen. The contrast rate was selected because it produced the clearest result, not because it was the only one tried, and two of the four moved the opposite way.
 
@@ -285,6 +285,6 @@ python3.12 -m venv .venv
 .venv/bin/python scripts/run_all.py
 ```
 
-`run_all.py` runs the test suite, builds the subset, runs both experiments and the supplementary runs, audits the results, regenerates this report and its PDF, and executes the notebook. Each step is a separate script and can be run alone; the experiments take 14.8 s and the report takes about a second, and it is usually the report that changed.
+`run_all.py` runs the test suite, builds the subset, runs both experiments and the supplementary runs, audits the results, regenerates this report and its PDF, and executes the notebook. Each step is a separate script and can be run alone; the experiments take 15.3 s and the report takes about a second, and it is usually the report that changed.
 
 Executed notebook: `GAN_MNIST.ipynb`. Repository: https://github.com/srcollins785/Samuel_Collins_GAN_MNIST.
