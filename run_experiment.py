@@ -101,10 +101,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", default="both",
                         choices=["baseline", "contrast", "both"])
-    parser.add_argument("--contrast-lr", type=float, default=1e-3,
+    parser.add_argument("--contrast-lr", type=float, default=2e-5,
                         help="discriminator learning rate for the contrast run")
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--subset-size", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--generator-lr", type=float, default=None)
+    parser.add_argument("--baseline-lr", type=float, default=None,
+                        help="discriminator learning rate for the baseline")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--name-suffix", default="",
                         help="appended to run names, for scouting runs")
@@ -126,6 +130,12 @@ def main() -> int:
         )
     if args.subset_size is not None:
         overrides["subset_size"] = args.subset_size
+    if args.batch_size is not None:
+        overrides["batch_size"] = args.batch_size
+    if args.generator_lr is not None:
+        overrides["generator_lr"] = args.generator_lr
+    if args.baseline_lr is not None:
+        overrides["discriminator_lr"] = args.baseline_lr
 
     baseline = RunConfig(name=f"baseline{args.name_suffix}", **overrides)
     contrast = baseline.contrast(args.contrast_lr,

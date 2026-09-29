@@ -53,10 +53,19 @@ class RunConfig:
     name: str = "baseline"
     seed: int = 42
     subset_size: int = 10_000
-    batch_size: int = 128
+    # 32 rather than a more usual 128. The brief fixes the budget at five
+    # epochs over 10,000 images, which is 390 generator updates at batch 128
+    # and 1,560 at batch 32. Batch size is not one of the things the brief
+    # fixes, and a scouting sweep (recorded in the report) found batch 32
+    # produced recognizable digit strokes at five epochs where batch 128
+    # produced centered blobs. Batch 16 was no better and twice as slow.
+    batch_size: int = 32
     latent_dim: int = 100
     epochs: int = 5
     generator_lr: float = 2e-4
+    # Equal to the generator rate, which is what the TensorFlow DCGAN
+    # tutorial this work adapts uses. The contrast run moves this and only
+    # this.
     discriminator_lr: float = 2e-4
     # Adam at beta1=0.5 rather than the 0.9 default. The DCGAN paper found
     # 0.9 made training oscillate; 0.5 is the value the TensorFlow tutorial
